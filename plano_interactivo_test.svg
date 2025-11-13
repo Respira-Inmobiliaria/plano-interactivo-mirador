@@ -7,13 +7,36 @@
    width="3543"
    height="4324"
    viewBox="0 0 3543 4324"
+   sodipodi:docname="plano_interactivo_test.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.17876966"
+     inkscape:cx="1770.4347"
+     inkscape:cy="2162"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2" />
   <defs
      id="defs1" />
   <g
-     id="layer1">
+     id="layer1"
+     style="display:inline">
     <image
        width="3543"
        height="4324"
@@ -23,10 +46,16 @@
   </g>
   <g
      id="layer2">
-    <path
-       style="fill:none;stroke:#faf5f5;stroke-opacity:1"
-       d="m 2046.1037,2580.6603 81.8091,0.1748 v 0 l 0.6993,-64.6782 -83.5573,-1.2237 z"
-       id="LV-996afa2e" />
+    <a
+       target="_blank"
+       style="cursor:pointer"
+       xlink:href="https://lookerstudio.google.com/reporting/15744aac-3a89-461f-84b8-5fcf58ac12a9/page/bNsaF?params=LoteID:LV-996afa2e&#10;"
+       id="a1">
+      <path
+         style="fill:none;stroke:#faf5f5;stroke-opacity:1"
+         d="m 2046.1037,2580.6603 81.8091,0.1748 v 0 l 0.6993,-64.6782 -83.5573,-1.2237 z"
+         id="LV-996afa2e" />
+    </a>
     <path
        style="fill:none;stroke:#faf5f5;stroke-opacity:1"
        d="m 2131.409,2581.7091 82.6832,0.1748 v 0 0 -66.0766 l -82.5084,-0.1749 v 0 z"
