@@ -1,14 +1,195 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Plano Interactivo Mirador</title>
-<style>
-    body { margin: 0; padding: 0; }
-    img { width: 100%; height: auto; display: block; }
-</style>
+  <meta charset="UTF-8">
+  <title>Plano Interactivo Mirador</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+
+    /* El contenedor principal */
+    .layout {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+    }
+
+    /* Columna del plano */
+    .mapa-container {
+      flex: 2;
+      overflow: auto;
+      background: #fff;
+    }
+
+    /* Hacemos que el SVG ocupe el ancho disponible */
+    .mapa-container object {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+    }
+
+    /* Panel de información */
+    .panel-info {
+      flex: 1;
+      padding: 16px;
+      background: #ffffff;
+      box-shadow: -2px 0 6px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .panel-info h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+
+    .campo {
+      margin-bottom: 6px;
+    }
+
+    .campo b {
+      display: inline-block;
+      width: 150px;
+      color: #555;
+    }
+
+    .estado-disponible { color: #2ecc71; font-weight: bold; }
+    .estado-reservado  { color: #f1c40f; font-weight: bold; }
+    .estado-vendido    { color: #e74c3c; font-weight: bold; }
+
+    /* Versión móvil: plano arriba, panel abajo */
+    @media (max-width: 900px) {
+      .layout {
+        flex-direction: column;
+      }
+      .mapa-container {
+        height: 60vh;
+      }
+      .panel-info {
+        height: 40vh;
+        box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+      }
+    }
+  </style>
 </head>
 <body>
-    <object data="plano_interactivo_test_actualizado1.svg" type="image/svg+xml" style="width:100%; height:auto;"></object>
+
+  <div class="layout">
+    <!-- Plano SVG -->
+    <div class="mapa-container">
+      <!-- IMPORTANTE: añadimos un id al object -->
+      <object
+        id="planoSvg"
+        data="plano_interactivo_test_actualizado1.svg"
+        type="image/svg+xml">
+      </object>
+    </div>
+
+    <!-- Panel de información del lote -->
+    <div class="panel-info">
+      <h2 id="tituloLote">Seleccione un lote</h2>
+      <div id="infoLote">
+        <p>Haga clic en un lote del plano para ver sus detalles aquí mismo.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // URL de tu Apps Script (solo lectura)
+    const URL_API = "https://script.google.com/macros/s/AKfycbwmyLh86dC2fE-4mRWoaSadbtjkCU-Jcl3ZcYKN3ZdgVxo__RG0Orl7sdaxxi0JSiNR/exec";
+
+    /**
+     * Obtiene la información de un lote por su Codigo_Automatico
+     */
+    async function obtenerLote(codigo) {
+      const url = URL_API + "?lote=" + encodeURIComponent(codigo);
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error("Error al llamar a la API", res.status, res.statusText);
+        return null;
+      }
+      return await res.json();
+    }
+
+    /**
+     * Pinta los datos del lote en el panel lateral
+     */
+    function mostrarLoteEnPanel(lote) {
+      const titulo = document.getElementById("tituloLote");
+      const info   = document.getElementById("infoLote");
+
+      if (!lote || Object.keys(lote).length === 0) {
+        titulo.textContent = "Lote no encontrado";
+        info.innerHTML = "<p>No se encontraron datos para este lote.</p>";
+        return;
+      }
+
+      titulo.textContent = "Lote " + (lote.Nombre_Lote || lote.Codigo_Automatico);
+
+      // Determinar clase para el estado
+      let claseEstado = "";
+      const estado = String(lote.Estado || "").toLowerCase();
+      if (estado.includes("disponible")) claseEstado = "estado-disponible";
+      if (estado.includes("reservado"))  claseEstado = "estado-reservado";
+      if (estado.includes("vendido"))    claseEstado = "estado-vendido";
+
+      info.innerHTML = `
+        <div class="campo"><b>Código automático:</b> ${lote.Codigo_Automatico || ""}</div>
+        <div class="campo"><b>Proyecto:</b> ${lote.Proyecto || ""}</div>
+        <div class="campo"><b>Manzana:</b> ${lote.Manzana || ""}</div>
+        <div class="campo"><b>Nombre de lote:</b> ${lote.Nombre_Lote || ""}</div>
+        <div class="campo"><b>Área (m²):</b> ${lote.Area_Lote_m2 || ""}</div>
+        <div class="campo"><b>Frente (m):</b> ${lote.Frente_m || ""}</div>
+        <div class="campo"><b>Derecha (m):</b> ${lote.Derecha_m || ""}</div>
+        <div class="campo"><b>Izquierda (m):</b> ${lote.Izquierda_m || ""}</div>
+        <div class="campo"><b>Fondo (m):</b> ${lote.Fondo_m || ""}</div>
+        <div class="campo"><b>Estado:</b> <span class="${claseEstado}">${lote.Estado || ""}</span></div>
+        <div class="campo"><b>Precio lista:</b> ${lote.Precio_Lista || ""}</div>
+        <div class="campo"><b>Permite otro precio:</b> ${lote.Permitir_Otro_Precio || ""}</div>
+        <div class="campo"><b>Ubicación:</b> ${lote.Detalles_de_Ubicación || ""}</div>
+        <div class="campo"><b>Motivo no disponible:</b> ${lote.Motivo_por_qué_no_disponible || ""}</div>
+        <div class="campo"><b>Estado en fase de venta:</b> ${lote.Estado_en_fase_de_venta || ""}</div>
+        <div class="campo"><b>Asesor responsable:</b> ${lote.Asesor_Responsable || ""}</div>
+      `;
+    }
+
+    /**
+     * Conecta los clics del SVG con la API
+     */
+    function inicializarEventosSVG() {
+      const obj = document.getElementById("planoSvg");
+      if (!obj) return;
+
+      // El SVG se carga de forma asíncrona: esperamos a que termine
+      obj.addEventListener("load", () => {
+        const svgDoc = obj.contentDocument;
+        if (!svgDoc) {
+          console.error("No se pudo acceder al contenido del SVG.");
+          return;
+        }
+
+        // Todos los elementos clicables deben tener class="lote"
+        const lotes = svgDoc.querySelectorAll(".lote");
+        lotes.forEach(el => {
+          el.style.cursor = "pointer";
+          el.addEventListener("click", async () => {
+            const codigo = el.id;  // debe coincidir con Codigo_Automatico
+            console.log("Lote clicado:", codigo);
+            const datos = await obtenerLote(codigo);
+            mostrarLoteEnPanel(datos);
+          });
+        });
+      });
+    }
+
+    // Iniciar cuando la página haya cargado
+    window.addEventListener("load", inicializarEventosSVG);
+  </script>
+
 </body>
 </html>
