@@ -9,17 +9,19 @@
       padding: 0;
       font-family: Arial, sans-serif;
       background: #f4f4f4;
-      font-size: 16px; /* un poco más grande para móvil */
+      font-size: 16px;
     }
 
+    /* === LAYOUT POR DEFECTO: VERTICAL (MÓVIL) === */
     .layout {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;  /* SIEMPRE uno encima de otro por defecto */
       height: 100vh;
     }
 
     .mapa-container {
-      flex: 2;
+      flex: none;
+      height: 75vh;           /* 3/4 del alto de la pantalla para el plano */
       overflow: auto;
       background: #fff;
     }
@@ -32,13 +34,14 @@
     }
 
     .panel-info {
-      flex: 1;
+      flex: none;
+      height: 25vh;           /* 1/4 del alto de la pantalla para el panel */
       padding: 16px;
       background: #ffffff;
-      box-shadow: -2px 0 6px rgba(0,0,0,0.1);
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.1); /* sombra arriba */
       box-sizing: border-box;
       overflow-y: auto;
-      font-size: 15px; /* texto del panel un poco mayor */
+      font-size: 15px;
     }
 
     .panel-info h2 {
@@ -54,7 +57,7 @@
 
     .campo b {
       display: inline-block;
-      width: 130px; /* un poco menos para que quepa mejor en 2 columnas */
+      width: 130px;
       color: #555;
       font-weight: 600;
     }
@@ -63,8 +66,7 @@
     .estado-reservado  { color: #f1c40f; font-weight: bold; }
     .estado-vendido    { color: #e74c3c; font-weight: bold; }
 
-    /* Distribución de la información en el panel:
-       hasta 2 columnas para que encaje mejor en el bloque inferior */
+    /* Panel en hasta 2 columnas */
     #infoLote {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -72,38 +74,28 @@
       row-gap: 4px;
     }
 
-    /* En pantallas muy estrechas, una sola columna para no apretar demasiado */
+    /* En móviles muy estrechos: una sola columna */
     @media (max-width: 480px) {
       #infoLote {
         grid-template-columns: 1fr;
       }
     }
 
-    /* VERSIÓN MÓVIL (tu requerimiento principal)
-       - layout en columna
-       - plano arriba (~75% de la altura)
-       - panel abajo (~25% de la altura)
-    */
-    @media (max-width: 900px) {
+    /* === VISTA ESCRITORIO (ANCHA): COMO ANTES === */
+    @media (min-width: 1024px) {
       .layout {
-        flex-direction: column;
+        flex-direction: row;   /* mapa izquierda, panel derecha */
       }
 
       .mapa-container {
-        height: 75vh;    /* 3/4 de la pantalla para el plano */
+        flex: 2;
+        height: auto;          /* que se adapte al alto del viewport */
       }
 
       .panel-info {
-        height: 25vh;    /* 1/4 de la pantalla para el panel */
-        box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
-      }
-
-      .panel-info h2 {
-        font-size: 18px;
-      }
-
-      .panel-info {
-        font-size: 14px;
+        flex: 1;
+        height: auto;
+        box-shadow: -2px 0 6px rgba(0,0,0,0.1); /* sombra a la izquierda */
       }
     }
   </style>
@@ -218,7 +210,7 @@
           el.addEventListener("click", async (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
-            const codigo = el.id; // ej. "LV-996afa2e"
+            const codigo = el.id;
             console.log("[SVG] lote clicado:", codigo);
             const datos = await obtenerLote(codigo);
             mostrarLoteEnPanel(datos);
@@ -233,14 +225,11 @@
       obj.addEventListener("load", conectarEventos, { once: true });
     }
 
-    // Usamos DOMContentLoaded para asegurarnos de que el <object> ya existe en el DOM
     window.addEventListener("DOMContentLoaded", () => {
       console.log("[APP] DOMContentLoaded");
       inicializarEventosSVG();
     });
 
-    // (mantengo este segundo listener igual que en tu código original,
-    //  aunque es redundante, para no alterar el comportamiento que ya te funciona)
     window.addEventListener("DOMContentLoaded", () => {
       console.log("[APP] DOMContentLoaded");
       inicializarEventosSVG();
