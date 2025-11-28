@@ -4,23 +4,43 @@
   <meta charset="UTF-8">
   <title>Plano Interactivo Mirador</title>
   <style>
+    :root {
+      /* Tamaños base de fuente */
+      --font-body: 16px;
+      --font-small: 14px;
+      --font-title: 20px;
+      --font-title-big: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       background: #f4f4f4;
+      font-size: var(--font-body);
+      color: #2c3e50;
     }
 
+    /* CONTENEDOR PRINCIPAL
+       Mobile first: SIEMPRE columna (plano arriba, info abajo)
+    */
     .layout {
       display: flex;
-      flex-direction: row;
-      height: 100vh;
+      flex-direction: column;
+      height: 100vh;          /* ocupamos toda la pantalla */
     }
 
+    /* BLOQUE SUPERIOR: PLANO */
     .mapa-container {
-      flex: 2;
-      overflow: auto;
-      background: #fff;
+      flex: 0 0 75vh;         /* ~3/4 de la altura de la pantalla */
+      max-height: 75vh;
+      overflow: auto;         /* scroll si hace falta */
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
     }
 
     .mapa-container object {
@@ -30,44 +50,93 @@
       border: none;
     }
 
+    /* BLOQUE INFERIOR: PANEL DE INFORMACIÓN */
     .panel-info {
-      flex: 1;
-      padding: 16px;
+      flex: 1 0 25vh;         /* ~1/4 de la altura de la pantalla */
+      min-height: 25vh;
+      padding: 10px 12px;
       background: #ffffff;
-      box-shadow: -2px 0 6px rgba(0,0,0,0.1);
-      box-sizing: border-box;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
       overflow-y: auto;
     }
 
     .panel-info h2 {
-      margin-top: 0;
+      margin: 0 0 6px 0;
+      font-size: var(--font-title-big);
       color: #2c3e50;
     }
 
+    .panel-subtitulo {
+      margin: 0 0 10px 0;
+      font-size: var(--font-small);
+      color: #7f8c8d;
+    }
+
+    /* GRID DE CAMPOS DENTRO DEL PANEL
+       Aquí se colocan todos los <div class="campo"> que genera JS.
+    */
+    #infoLote {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* hasta 2 columnas */
+      column-gap: 12px;
+      row-gap: 4px;
+      font-size: var(--font-small);
+    }
+
+    /* En pantallas MUY estrechas (móviles pequeños) pasamos a 1 columna */
+    @media (max-width: 400px) {
+      #infoLote {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .campo {
-      margin-bottom: 6px;
+      margin: 0; /* el espacio lo da el row-gap del grid */
     }
 
     .campo b {
       display: inline-block;
-      width: 150px;
+      font-weight: 600;
       color: #555;
+      margin-right: 4px;
     }
 
-    .estado-disponible { color: #2ecc71; font-weight: bold; }
+    /* Estado con colores */
+    .estado-disponible { color: #27ae60; font-weight: bold; }
     .estado-reservado  { color: #f1c40f; font-weight: bold; }
     .estado-vendido    { color: #e74c3c; font-weight: bold; }
 
-    @media (max-width: 900px) {
+    /* --------- VERSIÓN ESCRITORIO / TABLET GRANDE ---------
+       A partir de 900px de ancho volvemos al diseño en 2 columnas:
+       plano a la izquierda, panel a la derecha.
+       Así se ve bien tanto en PC como en móvil.
+    ---------------------------------------------------------*/
+    @media (min-width: 900px) {
       .layout {
-        flex-direction: column;
+        flex-direction: row;
       }
+
       .mapa-container {
-        height: 60vh;
+        flex: 2;
+        max-height: 100vh;
+        border-bottom: none;
+        border-right: 1px solid #ddd;
       }
+
       .panel-info {
-        height: 40vh;
-        box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
+        flex: 1;
+        min-height: 100vh;
+        box-shadow: -2px 0 6px rgba(0,0,0,0.08);
+      }
+
+      /* En escritorio es cómodo mantener 2 columnas de datos */
+      #infoLote {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .panel-info h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
       }
     }
   </style>
@@ -75,7 +144,7 @@
 <body>
 
   <div class="layout">
-    <!-- Plano SVG -->
+    <!-- BLOQUE SUPERIOR: PLANO SVG -->
     <div class="mapa-container">
       <object
         id="planoSvg"
@@ -84,11 +153,14 @@
       </object>
     </div>
 
-    <!-- Panel de información del lote -->
+    <!-- BLOQUE INFERIOR: PANEL DE INFORMACIÓN DEL LOTE -->
     <div class="panel-info">
       <h2 id="tituloLote">Seleccione un lote</h2>
+      <p class="panel-subtitulo">
+        Haga clic en un lote del plano para ver sus detalles aquí mismo.
+      </p>
       <div id="infoLote">
-        <p>Haga clic en un lote del plano para ver sus detalles aquí mismo.</p>
+        <!-- Aquí se inyectan los <div class="campo"> desde JavaScript -->
       </div>
     </div>
   </div>
@@ -97,6 +169,9 @@
     // URL de tu Apps Script (solo lectura)
     const URL_API = "https://script.google.com/macros/s/AKfycbwmyLh86dC2fE-4mRWoaSadbtjkCU-Jcl3ZcYKN3ZdgVxo__RG0Orl7sdaxxi0JSiNR/exec";
 
+    /**
+     * Obtiene la información de un lote por su Codigo_Automatico
+     */
     async function obtenerLote(codigo) {
       try {
         const url = URL_API + "?lote=" + encodeURIComponent(codigo);
@@ -116,18 +191,22 @@
       }
     }
 
+    /**
+     * Pinta los datos del lote en el panel inferior
+     */
     function mostrarLoteEnPanel(lote) {
       const titulo = document.getElementById("tituloLote");
       const info   = document.getElementById("infoLote");
 
       if (!lote || Object.keys(lote).length === 0) {
         titulo.textContent = "Lote no encontrado";
-        info.innerHTML = "<p>No se encontraron datos para este lote.</p>";
+        info.innerHTML = "<div class='campo'><b>Mensaje:</b> No se encontraron datos para este lote.</div>";
         return;
       }
 
       titulo.textContent = "Lote " + (lote.Nombre_Lote || lote.Codigo_Automatico);
 
+      // Determinar clase para el estado
       let claseEstado = "";
       const estado = String(lote.Estado || "").toLowerCase();
       if (estado.includes("disponible")) claseEstado = "estado-disponible";
@@ -154,58 +233,53 @@
       `;
     }
 
-     /**
-   * Conecta los clics del SVG con la API
-   */
-  function inicializarEventosSVG() {
-    const obj = document.getElementById("planoSvg");
-    if (!obj) {
-      console.error("[SVG] No se encuentra el elemento #planoSvg");
-      return;
-    }
-
-    console.log("[SVG] inicializarEventosSVG ejecutado");
-
-    // SIEMPRE esperamos al evento 'load' del <object>
-    function conectarEventos() {
-      const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
-      if (!svgDoc) {
-        console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
+    /**
+     * Conecta los clics del SVG con la API
+     */
+    function inicializarEventosSVG() {
+      const obj = document.getElementById("planoSvg");
+      if (!obj) {
+        console.error("[SVG] No se encuentra el elemento #planoSvg");
         return;
       }
 
-      const lotes = svgDoc.querySelectorAll(".lote");
-      console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
+      console.log("[SVG] inicializarEventosSVG ejecutado");
 
-      lotes.forEach(el => {
-        el.style.cursor = "pointer";
-        el.addEventListener("click", async (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          const codigo = el.id; // ej. "LV-996afa2e"
-          console.log("[SVG] lote clicado:", codigo);
-          const datos = await obtenerLote(codigo);
-          mostrarLoteEnPanel(datos);
+      function conectarEventos() {
+        const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
+        if (!svgDoc) {
+          console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
+          return;
+        }
+
+        const lotes = svgDoc.querySelectorAll(".lote");
+        console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
+
+        lotes.forEach(el => {
+          el.style.cursor = "pointer";
+          el.addEventListener("click", async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const codigo = el.id;
+            console.log("[SVG] Lote clicado:", codigo);
+            const datos = await obtenerLote(codigo);
+            mostrarLoteEnPanel(datos);
+          });
         });
-      });
 
-      if (!lotes.length) {
-        console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
+        if (!lotes.length) {
+          console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
+        }
+      }
+
+      if (obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument())) {
+        console.log("[SVG] El objeto ya tiene contentDocument, conectando eventos ahora.");
+        conectarEventos();
+      } else {
+        console.log("[SVG] Esperando evento 'load' del <object>…");
+        obj.addEventListener("load", conectarEventos, { once: true });
       }
     }
-
-    // Aquí está el cambio importante:
-    // no hacemos la rama "si ya tiene contentDocument",
-    // siempre enganchamos al evento 'load'.
-    obj.addEventListener("load", conectarEventos, { once: true });
-  }
-
-  // Usamos DOMContentLoaded para asegurarnos de que el <object> ya existe en el DOM
-  window.addEventListener("DOMContentLoaded", () => {
-    console.log("[APP] DOMContentLoaded");
-    inicializarEventosSVG();
-  });
-
 
     window.addEventListener("DOMContentLoaded", () => {
       console.log("[APP] DOMContentLoaded");
