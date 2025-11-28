@@ -154,50 +154,58 @@
       `;
     }
 
-    function inicializarEventosSVG() {
-      const obj = document.getElementById("planoSvg");
-      if (!obj) {
-        console.error("[SVG] No se encuentra el elemento #planoSvg");
+     /**
+   * Conecta los clics del SVG con la API
+   */
+  function inicializarEventosSVG() {
+    const obj = document.getElementById("planoSvg");
+    if (!obj) {
+      console.error("[SVG] No se encuentra el elemento #planoSvg");
+      return;
+    }
+
+    console.log("[SVG] inicializarEventosSVG ejecutado");
+
+    // SIEMPRE esperamos al evento 'load' del <object>
+    function conectarEventos() {
+      const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
+      if (!svgDoc) {
+        console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
         return;
       }
 
-      console.log("[SVG] inicializarEventosSVG ejecutado");
+      const lotes = svgDoc.querySelectorAll(".lote");
+      console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
 
-      function conectarEventos() {
-        const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
-        if (!svgDoc) {
-          console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
-          return;
-        }
-
-        const lotes = svgDoc.querySelectorAll(".lote");
-        console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
-
-        lotes.forEach(el => {
-          el.style.cursor = "pointer";
-          el.addEventListener("click", async (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            const codigo = el.id;
-            console.log("[SVG] Lote clicado:", codigo);
-            const datos = await obtenerLote(codigo);
-            mostrarLoteEnPanel(datos);
-          });
+      lotes.forEach(el => {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const codigo = el.id; // ej. "LV-996afa2e"
+          console.log("[SVG] lote clicado:", codigo);
+          const datos = await obtenerLote(codigo);
+          mostrarLoteEnPanel(datos);
         });
+      });
 
-        if (!lotes.length) {
-          console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
-        }
-      }
-
-      if (obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument())) {
-        console.log("[SVG] El objeto ya tiene contentDocument, conectando eventos ahora.");
-        conectarEventos();
-      } else {
-        console.log("[SVG] Esperando evento 'load' del <object>…");
-        obj.addEventListener("load", conectarEventos, { once: true });
+      if (!lotes.length) {
+        console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
       }
     }
+
+    // Aquí está el cambio importante:
+    // no hacemos la rama "si ya tiene contentDocument",
+    // siempre enganchamos al evento 'load'.
+    obj.addEventListener("load", conectarEventos, { once: true });
+  }
+
+  // Usamos DOMContentLoaded para asegurarnos de que el <object> ya existe en el DOM
+  window.addEventListener("DOMContentLoaded", () => {
+    console.log("[APP] DOMContentLoaded");
+    inicializarEventosSVG();
+  });
+
 
     window.addEventListener("DOMContentLoaded", () => {
       console.log("[APP] DOMContentLoaded");
