@@ -25,9 +25,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="2.0225478"
-     inkscape:cx="2056.5645"
-     inkscape:cy="2635.0428"
+     inkscape:zoom="4.0450956"
+     inkscape:cx="2098.4671"
+     inkscape:cy="2595.1179"
      inkscape:window-width="1920"
      inkscape:window-height="991"
      inkscape:window-x="-9"
@@ -54,6 +54,31 @@
        style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
        d="m 2131.9645,2580.9032 81.0858,0.4944 0.4944,-65.7587 H 2131.47 Z"
        id="LV-996afa2e"
+       class="lote" />
+    <path
+       style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
+       d="m 2046.1816,2581.3976 82.0747,0.2472 0.2472,-65.5114 -82.0747,0.2472 z"
+       id="LV-ace804ad"
+       class="lote" />
+    <path
+       style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
+       d="m 2046.4288,2627.132 82.5691,0.7416 0.2472,-44.2511 -82.8163,-0.4944 z"
+       id="LV-fbfbe6cb"
+       class="lote" />
+    <path
+       style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
+       d="m 2131.9644,2626.6376 81.5803,0.4944 0.2472,-43.2623 -83.0635,-0.4944 z"
+       id="LV-74cf0b31"
+       class="lote" />
+    <path
+       style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
+       d="m 2046.4288,2671.3831 82.3219,-0.2472 -0.2472,-42.0262 h -81.8275 z"
+       id="LV-bb569c9c"
+       class="lote" />
+    <path
+       style="opacity:0.310044;fill:#ffffff;fill-opacity:0.02;stroke:#fffdfd;stroke-width:2;stroke-opacity:0.05;pointer-events:all"
+       d="m 2131.7172,2628.8625 82.0747,0.4944 0.2472,41.5318 -82.3219,0.2472 z"
+       id="LV-c70e9a76"
        class="lote" />
   </g>
 </svg>
