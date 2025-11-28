@@ -11,21 +11,18 @@
       background: #f4f4f4;
     }
 
-    /* El contenedor principal */
     .layout {
       display: flex;
       flex-direction: row;
       height: 100vh;
     }
 
-    /* Columna del plano */
     .mapa-container {
       flex: 2;
       overflow: auto;
       background: #fff;
     }
 
-    /* Hacemos que el SVG ocupe el ancho disponible */
     .mapa-container object {
       width: 100%;
       height: 100%;
@@ -33,7 +30,6 @@
       border: none;
     }
 
-    /* Panel de información */
     .panel-info {
       flex: 1;
       padding: 16px;
@@ -62,7 +58,6 @@
     .estado-reservado  { color: #f1c40f; font-weight: bold; }
     .estado-vendido    { color: #e74c3c; font-weight: bold; }
 
-    /* Versión móvil: plano arriba, panel abajo */
     @media (max-width: 900px) {
       .layout {
         flex-direction: column;
@@ -82,12 +77,12 @@
   <div class="layout">
     <!-- Plano SVG -->
     <div class="mapa-container">
-      <!-- IMPORTANTE: añadimos un id al object -->
       <object
-  id="planoSvg"
-  data="El_Mirador_1.svg"
-  type="image/svg+xml">
-</object>
+        id="planoSvg"
+        data="El_Mirador_1.svg"
+        type="image/svg+xml">
+      </object>
+    </div>
 
     <!-- Panel de información del lote -->
     <div class="panel-info">
@@ -99,131 +94,116 @@
   </div>
 
   <script>
-  // URL de tu Apps Script (solo lectura)
-  const URL_API = "https://script.google.com/macros/s/AKfycbwmyLh86dC2fE-4mRWoaSadbtjkCU-Jcl3ZcYKN3ZdgVxo__RG0Orl7sdaxxi0JSiNR/exec";
+    // URL de tu Apps Script (solo lectura)
+    const URL_API = "https://script.google.com/macros/s/AKfycbwmyLh86dC2fE-4mRWoaSadbtjkCU-Jcl3ZcYKN3ZdgVxo__RG0Orl7sdaxxi0JSiNR/exec";
 
-  /**
-   * Obtiene la información de un lote por su Codigo_Automatico
-   */
-  async function obtenerLote(codigo) {
-    try {
-      const url = URL_API + "?lote=" + encodeURIComponent(codigo);
-      console.log("[API] Llamando a:", url);
-      const res = await fetch(url);
+    async function obtenerLote(codigo) {
+      try {
+        const url = URL_API + "?lote=" + encodeURIComponent(codigo);
+        console.log("[API] Llamando a:", url);
+        const res = await fetch(url);
 
-      if (!res.ok) {
-        console.error("[API] Error HTTP", res.status, res.statusText);
+        if (!res.ok) {
+          console.error("[API] Error HTTP", res.status, res.statusText);
+          return null;
+        }
+        const data = await res.json();
+        console.log("[API] Respuesta:", data);
+        return data;
+      } catch (err) {
+        console.error("[API] Error de red o parseo:", err);
         return null;
       }
-      const data = await res.json();
-      console.log("[API] Respuesta:", data);
-      return data;
-    } catch (err) {
-      console.error("[API] Error de red o parseo:", err);
-      return null;
-    }
-  }
-
-  /**
-   * Pinta los datos del lote en el panel lateral
-   */
-  function mostrarLoteEnPanel(lote) {
-    const titulo = document.getElementById("tituloLote");
-    const info   = document.getElementById("infoLote");
-
-    if (!lote || Object.keys(lote).length === 0) {
-      titulo.textContent = "Lote no encontrado";
-      info.innerHTML = "<p>No se encontraron datos para este lote.</p>";
-      return;
     }
 
-    titulo.textContent = "Lote " + (lote.Nombre_Lote || lote.Codigo_Automatico);
+    function mostrarLoteEnPanel(lote) {
+      const titulo = document.getElementById("tituloLote");
+      const info   = document.getElementById("infoLote");
 
-    // Determinar clase para el estado
-    let claseEstado = "";
-    const estado = String(lote.Estado || "").toLowerCase();
-    if (estado.includes("disponible")) claseEstado = "estado-disponible";
-    if (estado.includes("reservado"))  claseEstado = "estado-reservado";
-    if (estado.includes("vendido"))    claseEstado = "estado-vendido";
-
-    info.innerHTML = `
-      <div class="campo"><b>Código automático:</b> ${lote.Codigo_Automatico || ""}</div>
-      <div class="campo"><b>Proyecto:</b> ${lote.Proyecto || ""}</div>
-      <div class="campo"><b>Manzana:</b> ${lote.Manzana || ""}</div>
-      <div class="campo"><b>Nombre de lote:</b> ${lote.Nombre_Lote || ""}</div>
-      <div class="campo"><b>Área (m²):</b> ${lote.Area_Lote_m2 || ""}</div>
-      <div class="campo"><b>Frente (m):</b> ${lote.Frente_m || ""}</div>
-      <div class="campo"><b>Derecha (m):</b> ${lote.Derecha_m || ""}</div>
-      <div class="campo"><b>Izquierda (m):</b> ${lote.Izquierda_m || ""}</div>
-      <div class="campo"><b>Fondo (m):</b> ${lote.Fondo_m || ""}</div>
-      <div class="campo"><b>Estado:</b> <span class="${claseEstado}">${lote.Estado || ""}</span></div>
-      <div class="campo"><b>Precio lista:</b> ${lote.Precio_Lista || ""}</div>
-      <div class="campo"><b>Permite otro precio:</b> ${lote.Permitir_Otro_Precio || ""}</div>
-      <div class="campo"><b>Ubicación:</b> ${lote.Detalles_de_Ubicación || ""}</div>
-      <div class="campo"><b>Motivo no disponible:</b> ${lote.Motivo_por_qué_no_disponible || ""}</div>
-      <div class="campo"><b>Estado en fase de venta:</b> ${lote.Estado_en_fase_de_venta || ""}</div>
-      <div class="campo"><b>Asesor responsable:</b> ${lote.Asesor_Responsable || ""}</div>
-    `;
-  }
-
-  /**
-   * Conecta los clics del SVG con la API
-   */
-  function inicializarEventosSVG() {
-    const obj = document.getElementById("planoSvg");
-    if (!obj) {
-      console.error("[SVG] No se encuentra el elemento #planoSvg");
-      return;
-    }
-
-    console.log("[SVG] inicializarEventosSVG ejecutado");
-
-    // Función que realmente engancha los eventos dentro del SVG
-    function conectarEventos() {
-      // Algunos navegadores exponen getSVGDocument()
-      const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
-      if (!svgDoc) {
-        console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
+      if (!lote || Object.keys(lote).length === 0) {
+        titulo.textContent = "Lote no encontrado";
+        info.innerHTML = "<p>No se encontraron datos para este lote.</p>";
         return;
       }
 
-      const lotes = svgDoc.querySelectorAll(".lote");
-      console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
+      titulo.textContent = "Lote " + (lote.Nombre_Lote || lote.Codigo_Automatico);
 
-      lotes.forEach(el => {
-        el.style.cursor = "pointer";
-        el.addEventListener("click", async (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          const codigo = el.id;
-          console.log("[SVG] Lote clicado:", codigo);
-          const datos = await obtenerLote(codigo);
-          mostrarLoteEnPanel(datos);
+      let claseEstado = "";
+      const estado = String(lote.Estado || "").toLowerCase();
+      if (estado.includes("disponible")) claseEstado = "estado-disponible";
+      if (estado.includes("reservado"))  claseEstado = "estado-reservado";
+      if (estado.includes("vendido"))    claseEstado = "estado-vendido";
+
+      info.innerHTML = `
+        <div class="campo"><b>Código automático:</b> ${lote.Codigo_Automatico || ""}</div>
+        <div class="campo"><b>Proyecto:</b> ${lote.Proyecto || ""}</div>
+        <div class="campo"><b>Manzana:</b> ${lote.Manzana || ""}</div>
+        <div class="campo"><b>Nombre de lote:</b> ${lote.Nombre_Lote || ""}</div>
+        <div class="campo"><b>Área (m²):</b> ${lote.Area_Lote_m2 || ""}</div>
+        <div class="campo"><b>Frente (m):</b> ${lote.Frente_m || ""}</div>
+        <div class="campo"><b>Derecha (m):</b> ${lote.Derecha_m || ""}</div>
+        <div class="campo"><b>Izquierda (m):</b> ${lote.Izquierda_m || ""}</div>
+        <div class="campo"><b>Fondo (m):</b> ${lote.Fondo_m || ""}</div>
+        <div class="campo"><b>Estado:</b> <span class="${claseEstado}">${lote.Estado || ""}</span></div>
+        <div class="campo"><b>Precio lista:</b> ${lote.Precio_Lista || ""}</div>
+        <div class="campo"><b>Permite otro precio:</b> ${lote.Permitir_Otro_Precio || ""}</div>
+        <div class="campo"><b>Ubicación:</b> ${lote.Detalles_de_Ubicación || ""}</div>
+        <div class="campo"><b>Motivo no disponible:</b> ${lote.Motivo_por_qué_no_disponible || ""}</div>
+        <div class="campo"><b>Estado en fase de venta:</b> ${lote.Estado_en_fase_de_venta || ""}</div>
+        <div class="campo"><b>Asesor responsable:</b> ${lote.Asesor_Responsable || ""}</div>
+      `;
+    }
+
+    function inicializarEventosSVG() {
+      const obj = document.getElementById("planoSvg");
+      if (!obj) {
+        console.error("[SVG] No se encuentra el elemento #planoSvg");
+        return;
+      }
+
+      console.log("[SVG] inicializarEventosSVG ejecutado");
+
+      function conectarEventos() {
+        const svgDoc = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
+        if (!svgDoc) {
+          console.error("[SVG] No se pudo acceder a contentDocument/getSVGDocument.");
+          return;
+        }
+
+        const lotes = svgDoc.querySelectorAll(".lote");
+        console.log("[SVG] Lotes encontrados en el SVG:", lotes.length);
+
+        lotes.forEach(el => {
+          el.style.cursor = "pointer";
+          el.addEventListener("click", async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const codigo = el.id;
+            console.log("[SVG] Lote clicado:", codigo);
+            const datos = await obtenerLote(codigo);
+            mostrarLoteEnPanel(datos);
+          });
         });
-      });
 
-      if (!lotes.length) {
-        console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
+        if (!lotes.length) {
+          console.warn("[SVG] Atención: no se encontró ningún elemento con class='lote'.");
+        }
+      }
+
+      if (obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument())) {
+        console.log("[SVG] El objeto ya tiene contentDocument, conectando eventos ahora.");
+        conectarEventos();
+      } else {
+        console.log("[SVG] Esperando evento 'load' del <object>…");
+        obj.addEventListener("load", conectarEventos, { once: true });
       }
     }
 
-    // Si el SVG ya está cargado, conectamos de inmediato
-    if (obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument())) {
-      console.log("[SVG] El objeto ya tiene contentDocument, conectando eventos ahora.");
-      conectarEventos();
-    } else {
-      // Si aún no ha cargado, esperamos al evento load del <object>
-      console.log("[SVG] Esperando evento 'load' del <object>…");
-      obj.addEventListener("load", conectarEventos, { once: true });
-    }
-  }
-
-  // Usamos DOMContentLoaded para asegurarnos de que el <object> ya existe en el DOM
-  window.addEventListener("DOMContentLoaded", () => {
-    console.log("[APP] DOMContentLoaded");
-    inicializarEventosSVG();
-  });
-</script>
+    window.addEventListener("DOMContentLoaded", () => {
+      console.log("[APP] DOMContentLoaded");
+      inicializarEventosSVG();
+    });
+  </script>
 
 </body>
 </html>
