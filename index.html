@@ -12,6 +12,47 @@
       font-size: 16px;
     }
 
+    /* === NUEVO: Barra superior con botones de filtro === */
+    .top-bar {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+
+    .btn-filtro {
+      border: 1px solid #999;
+      background: #f2f2f2;
+      color: #333;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .btn-filtro.activo {
+      border-color: #1f6feb;
+      background: #1f6feb;
+      color: #fff;
+    }
+
+    /* En móvil, que los botones se acomoden mejor */
+    @media (max-width: 480px) {
+      .top-bar {
+        flex-wrap: wrap;
+      }
+      .btn-filtro {
+        flex: 1 1 calc(50% - 10px);
+        text-align: center;
+      }
+    }
+
     /* === LAYOUT POR DEFECTO: VERTICAL (MÓVIL) === */
     .layout {
       display: flex;
@@ -101,6 +142,13 @@
   </style>
 </head>
 <body>
+
+  <!-- === NUEVO: Barra de filtros === -->
+  <div class="top-bar">
+    <button class="btn-filtro" id="btnDisponibles">Lotes Disponibles</button>
+    <button class="btn-filtro" id="btnVendidos">Lotes Vendidos</button>
+    <button class="btn-filtro" id="btnSeparados">Lotes Separados</button>
+  </div>
 
   <div class="layout">
     <!-- Plano SVG -->
@@ -234,6 +282,211 @@
       console.log("[APP] DOMContentLoaded");
       inicializarEventosSVG();
     });
+
+    /* ===========================================================
+       =================== NUEVO: FILTROS =========================
+       =========================================================== */
+
+    // Cache de estados: Codigo_Automatico -> Estado_en_fase_de_venta
+    let ESTADOS = {};
+    let SVG_DOC = null;
+    let SVG_LOTES = [];
+
+    // Colores
+    const COLOR_DISPONIBLE = "#ffffff";  // blanco
+    const COLOR_VENDIDO    = "#e74c3c";  // rojo
+    const COLOR_SEPARADO   = "#f1c40f";  // amarillo
+    const COLOR_OTROS      = "#2f2f2f";  // gris oscuro (para no resaltados)
+
+    // Estado de filtro actual (null = sin filtro / por defecto)
+    let filtroActual = null; // "disponibles" | "vendidos" | "separados" | null
+
+    function normalizar(txt) {
+      return String(txt || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Carga todos los estados desde Apps Script (requiere ?todos=1)
+    async function cargarEstadosLotes() {
+      try {
+        const url = URL_API + "?todos=1";
+        console.log("[API] Cargando estados:", url);
+        const res = await fetch(url);
+
+        if (!res.ok) {
+          console.error("[API] Error HTTP al pedir todos los lotes", res.status, res.statusText);
+          return;
+        }
+
+        const data = await res.json();
+
+        // Esperamos array de objetos con: Codigo_Automatico, Estado_en_fase_de_venta
+        ESTADOS = {};
+        (data || []).forEach(row => {
+          const code = row.Codigo_Automatico;
+          const estado = row.Estado_en_fase_de_venta; // puede venir vacío
+          if (code) ESTADOS[code] = estado;
+        });
+
+        console.log("[API] Estados cargados:", Object.keys(ESTADOS).length);
+
+        // Si ya tenemos SVG cargado, pintamos por defecto
+        if (SVG_DOC && SVG_LOTES.length) {
+          pintarTodosPorEstado(); // al refrescar debe quedar sin filtro
+        }
+      } catch (err) {
+        console.error("[API] Error cargando estados:", err);
+      }
+    }
+
+    // Obtiene la lista de lotes del SVG y la guarda
+    function capturarSVG() {
+      const obj = document.getElementById("planoSvg");
+      if (!obj) return;
+
+      SVG_DOC = obj.contentDocument || (obj.getSVGDocument && obj.getSVGDocument());
+      if (!SVG_DOC) return;
+
+      SVG_LOTES = Array.from(SVG_DOC.querySelectorAll(".lote"));
+      console.log("[FILTRO] Lotes capturados del SVG:", SVG_LOTES.length);
+    }
+
+    // Pinta cada lote según su Estado_en_fase_de_venta (sin filtro)
+    function pintarTodosPorEstado() {
+      filtroActual = null; // reset de filtro al refrescar
+
+      // Apagar estado visual de botones
+      document.querySelectorAll(".btn-filtro").forEach(b => b.classList.remove("activo"));
+
+      SVG_LOTES.forEach(el => {
+        const codigo = el.id;
+        const estado = ESTADOS[codigo]; // puede ser undefined / vacío
+        const estN = normalizar(estado);
+
+        // defaults de trazo visibles
+        el.style.stroke = "#000000";
+        el.style.strokeOpacity = 0.25;
+        el.style.strokeWidth = 2;
+
+        // según reglas pedidas
+        if (estN === "") {
+          // Disponible = vacío
+          el.style.fill = COLOR_DISPONIBLE;
+          el.style.fillOpacity = 0.55;
+        } else if (estN === "vendido") {
+          el.style.fill = COLOR_VENDIDO;
+          el.style.fillOpacity = 0.65;
+        } else if (estN === "separado") {
+          el.style.fill = COLOR_SEPARADO;
+          el.style.fillOpacity = 0.65;
+        } else {
+          // cualquier otro valor no contemplado => gris oscuro
+          el.style.fill = COLOR_OTROS;
+          el.style.fillOpacity = 0.55;
+        }
+      });
+    }
+
+    // Aplica filtro: resalta los que coinciden y pone gris oscuro al resto
+    function aplicarFiltro(tipo) {
+      filtroActual = tipo; // "disponibles" | "vendidos" | "separados"
+
+      SVG_LOTES.forEach(el => {
+        const codigo = el.id;
+        const estado = ESTADOS[codigo];
+        const estN = normalizar(estado);
+
+        let coincide = false;
+        if (tipo === "disponibles") coincide = (estN === "");
+        if (tipo === "vendidos")    coincide = (estN === "vendido");
+        if (tipo === "separados")   coincide = (estN === "separado");
+
+        // Base: todos gris oscuro
+        el.style.fill = COLOR_OTROS;
+        el.style.fillOpacity = 0.55;
+        el.style.stroke = "#000000";
+        el.style.strokeOpacity = 0.25;
+        el.style.strokeWidth = 2;
+
+        // Si coincide, resalta con el color correspondiente
+        if (coincide) {
+          if (tipo === "disponibles") {
+            el.style.fill = COLOR_DISPONIBLE;
+            el.style.fillOpacity = 0.75;
+          }
+          if (tipo === "vendidos") {
+            el.style.fill = COLOR_VENDIDO;
+            el.style.fillOpacity = 0.75;
+          }
+          if (tipo === "separados") {
+            el.style.fill = COLOR_SEPARADO;
+            el.style.fillOpacity = 0.75;
+          }
+          el.style.strokeOpacity = 0.55;
+          el.style.strokeWidth = 2.5;
+        }
+      });
+    }
+
+    // Conecta botones
+    function configurarBotonesFiltro() {
+      const btnDisponibles = document.getElementById("btnDisponibles");
+      const btnVendidos    = document.getElementById("btnVendidos");
+      const btnSeparados   = document.getElementById("btnSeparados");
+
+      function activar(btn) {
+        document.querySelectorAll(".btn-filtro").forEach(b => b.classList.remove("activo"));
+        btn.classList.add("activo");
+      }
+
+      btnDisponibles.addEventListener("click", () => {
+        if (!SVG_DOC || !SVG_LOTES.length) return;
+        activar(btnDisponibles);
+        aplicarFiltro("disponibles");
+      });
+
+      btnVendidos.addEventListener("click", () => {
+        if (!SVG_DOC || !SVG_LOTES.length) return;
+        activar(btnVendidos);
+        aplicarFiltro("vendidos");
+      });
+
+      btnSeparados.addEventListener("click", () => {
+        if (!SVG_DOC || !SVG_LOTES.length) return;
+        activar(btnSeparados);
+        aplicarFiltro("separados");
+      });
+    }
+
+    // Inicializa todo el sistema de filtros (sin tocar tu lógica funcional)
+    function inicializarFiltros() {
+      configurarBotonesFiltro();
+      cargarEstadosLotes();
+
+      const obj = document.getElementById("planoSvg");
+      if (!obj) return;
+
+      // Cuando cargue el SVG, capturamos lotes y pintamos por estado
+      obj.addEventListener("load", () => {
+        capturarSVG();
+
+        // Si ya cargamos estados, pintamos; si no, igual pintamos con "otros" (gris) y luego se actualizará
+        if (SVG_DOC && SVG_LOTES.length) {
+          // Si aún no hay ESTADOS (porque no terminó fetch), quedará gris
+          // y luego cuando llegue el fetch, se repinta en pintarTodosPorEstado().
+          pintarTodosPorEstado();
+        }
+      }, { once: true });
+    }
+
+    // NUEVO: arrancar filtros al cargar la página
+    window.addEventListener("DOMContentLoaded", () => {
+      inicializarFiltros();
+    });
+
   </script>
 
 </body>
